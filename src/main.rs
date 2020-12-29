@@ -35,14 +35,14 @@ enum Command {
     SPACE,
 }
 
-static O: &'static [[u8; 4]; 3] = &[[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
+static O: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
 
 static I0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]];
-static J0: &'static [[u8; 3]; 3] = &[[1, 0, 0], [1, 1, 1], [0, 0, 0]];
-static L0: &'static [[u8; 3]; 3] = &[[0, 0, 1], [1, 1, 1], [0, 0, 0]];
-static S0: &'static [[u8; 3]; 3] = &[[0, 1, 1], [1, 1, 0], [0, 0, 0]];
-static T0: &'static [[u8; 3]; 3] = &[[0, 1, 0], [1, 1, 1], [0, 0, 0]];
-static Z0: &'static [[u8; 3]; 3] = &[[1, 1, 0], [0, 1, 1], [0, 0, 0]];
+static J0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
+static L0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
+static S0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]];
+static T0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
+static Z0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
 
 static IR: &'static [[u8; 4]; 4] = &[[0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0]];
 static JR: &'static [[u8; 3]; 3] = &[[0, 1, 1], [0, 1, 0], [0, 1, 0]];
@@ -87,7 +87,7 @@ impl JPiece<'_> {
 
 struct JPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 3]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 impl LPiece<'_> {
@@ -98,7 +98,7 @@ impl LPiece<'_> {
 
 struct LPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 3]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 impl OPiece<'_> {
@@ -109,12 +109,12 @@ impl OPiece<'_> {
 
 struct OPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 4]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 struct SPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 3]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 impl SPiece<'_> {
@@ -125,7 +125,7 @@ impl SPiece<'_> {
 
 struct TPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 3]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 impl TPiece<'_> {
@@ -136,7 +136,7 @@ impl TPiece<'_> {
 
 struct ZPiece<'a> {
     color: u8,
-    piece: &'a [[u8; 3]; 3],
+    piece: &'a [[u8; 4]; 4],
 }
 
 impl ZPiece<'_> {
@@ -263,71 +263,6 @@ impl App {
                 }
             }
         }
-        //match piece {
-        //Piece::I => {
-        //for r in 0..I0.len() {
-        //for c in 0..I0[0].len() {
-        //if I0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::J => {
-        //for r in 0..J0.len() {
-        //for c in 0..J0[0].len() {
-        //if J0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::L => {
-        //for r in 0..L0.len() {
-        //for c in 0..L0[0].len() {
-        //if L0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::O => {
-        //for r in 0..O.len() {
-        //for c in 0..O[0].len() {
-        //if O[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::S => {
-        //for r in 0..S0.len() {
-        //for c in 0..S0[0].len() {
-        //if S0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::T => {
-        //for r in 0..T0.len() {
-        //for c in 0..T0[0].len() {
-        //if T0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //Piece::Z => {
-        //for r in 0..Z0.len() {
-        //for c in 0..Z0[0].len() {
-        //if Z0[r][c] == 1 {
-        //self.paint(row + r as u16, column + c as u16, 0)?;
-        //}
-        //}
-        //}
-        //}
-        //}
         Ok(())
     }
 

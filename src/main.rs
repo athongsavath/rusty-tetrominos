@@ -243,7 +243,7 @@ impl App {
     }
 
     fn paint_next_piece(&mut self) -> crossterm::Result<()> {
-        let column = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
+        let column = GAME_WIDTH + INFO_PADDING;
         let row = EMPTY_TOP_INFO_ROWS;
 
         for i in 0..self.pieces.len() {
@@ -312,14 +312,16 @@ impl App {
             }
         } else {
             // Info Section
-            let x_start = column * info_multiplier * COLUMN_MULTIPLIER;
+            let adjusted_column = column - GAME_WIDTH + GAME_WIDTH * game_multiplier;
+            let x_start = adjusted_column * info_multiplier * COLUMN_MULTIPLIER;
             let x_end = x_start + info_multiplier * COLUMN_MULTIPLIER;
             let y_start = row * info_multiplier;
             let y_end = y_start + info_multiplier;
+
             for x in x_start..x_end {
                 for y in y_start..y_end {
                     self.stdout
-                        .queue(cursor::MoveTo(x + GAME_WIDTH * game_multiplier, y))?
+                        .queue(cursor::MoveTo(x, y))?
                         .queue(style::PrintStyledContent(
                             crossterm::style::style("█").with(color),
                         ))?;

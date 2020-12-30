@@ -1,12 +1,14 @@
+use board::Board;
 use crossterm::event::{poll, read, Event, KeyCode};
 use crossterm::style::{self, Color, Colorize};
 use crossterm::terminal::{ScrollUp, SetSize};
 use crossterm::{cursor, execute, QueueableCommand};
-use piece::{random_piece, rotate, Piece};
+use piece::{get_piece, random_piece, rotate, Piece};
 use std::collections::VecDeque;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
+mod board;
 mod piece;
 
 enum PaintType {
@@ -23,27 +25,8 @@ enum Command {
     Space,
 }
 
-const WIDTH: usize = 10;
-const HEIGHT: usize = 20;
-
 #[derive(Clone)]
 struct Point(u16, u16);
-
-struct Board {
-    width: usize,
-    height: usize,
-    board: [[u8; WIDTH]; HEIGHT],
-}
-
-impl Board {
-    fn new() -> Self {
-        Self {
-            width: WIDTH,
-            height: HEIGHT,
-            board: [[0u8; WIDTH]; HEIGHT],
-        }
-    }
-}
 
 struct App {
     board: Board,
@@ -98,7 +81,7 @@ impl App {
         let mut piece = random_piece();
         let mut now = std::time::Instant::now();
         let mut r = 0;
-        let mut c = 5;
+        let mut c = 4;
 
         loop {
             // First test without gravity
@@ -133,11 +116,20 @@ impl App {
             }
             if now.elapsed().as_millis() > 500 {
                 now = std::time::Instant::now();
-                r += 1;
-                // TODO: If intersection, this hsould be permanent
-                self.queue_clear_piece();
-                self.temp.clear();
-                self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+                if self.board.detect_collision(piece, r + 1, c) {
+                    // TODO: If intersection, this hsould be permanent
+                    self.temp.clear();
+                    // TODO: Pop the next piece!
+                    // TODO: Check for completed lines
+                    //      Increment lines by completed lines
+                    r = 0;
+                    c = 4;
+                } else {
+                    r += 1;
+                    self.queue_clear_piece();
+                    self.temp.clear();
+                    self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+                }
             }
             // TODO: Check game tick here
         }
@@ -198,39 +190,7 @@ impl App {
         use crate::piece::{S0, S2, SL, SR};
         use crate::piece::{T0, T2, TL, TR};
         use crate::piece::{Z0, Z2, ZL, ZR};
-        let next_piece = match piece {
-            Piece::O => O,
-
-            Piece::I => I0,
-            Piece::IR => IR,
-            Piece::I2 => I2,
-            Piece::IL => IL,
-
-            Piece::J => J0,
-            Piece::JR => JR,
-            Piece::J2 => J2,
-            Piece::JL => JL,
-
-            Piece::L => L0,
-            Piece::LR => LR,
-            Piece::L2 => L2,
-            Piece::LL => LL,
-
-            Piece::S => S0,
-            Piece::SR => SR,
-            Piece::S2 => S2,
-            Piece::SL => SL,
-
-            Piece::T => T0,
-            Piece::TR => TR,
-            Piece::T2 => T2,
-            Piece::TL => TL,
-
-            Piece::Z => Z0,
-            Piece::ZR => ZR,
-            Piece::Z2 => Z2,
-            Piece::ZL => ZL,
-        };
+        let next_piece = get_piece(piece);
 
         for r in 0..next_piece.len() {
             for c in 0..next_piece[0].len() {

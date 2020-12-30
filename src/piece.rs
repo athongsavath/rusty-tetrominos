@@ -62,11 +62,46 @@ pub static SL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0
 pub static TL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
 pub static ZL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]];
 
+pub fn get_piece(piece: Piece) -> &'static [[u8; 4]; 4] {
+    match piece {
+        Piece::O => O,
+
+        Piece::I => I0,
+        Piece::IR => IR,
+        Piece::I2 => I2,
+        Piece::IL => IL,
+
+        Piece::J => J0,
+        Piece::JR => JR,
+        Piece::J2 => J2,
+        Piece::JL => JL,
+
+        Piece::L => L0,
+        Piece::LR => LR,
+        Piece::L2 => L2,
+        Piece::LL => LL,
+
+        Piece::S => S0,
+        Piece::SR => SR,
+        Piece::S2 => S2,
+        Piece::SL => SL,
+
+        Piece::T => T0,
+        Piece::TR => TR,
+        Piece::T2 => T2,
+        Piece::TL => TL,
+
+        Piece::Z => Z0,
+        Piece::ZR => ZR,
+        Piece::Z2 => Z2,
+        Piece::ZL => ZL,
+    }
+}
+
 pub fn rotate(piece: Piece) -> Piece {
     match piece {
         Piece::O => Piece::O,
 
-        // Not sure how to handle I piece
         Piece::I => Piece::IR,
         Piece::IR => Piece::I2,
         Piece::I2 => Piece::IL,

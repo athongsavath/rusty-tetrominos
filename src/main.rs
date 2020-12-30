@@ -34,7 +34,12 @@ struct App {
 impl App {
     fn updateFrame() {}
     fn calculateCollision() {}
-    fn nextPiece() {}
+    fn nextPiece(&mut self) -> (Piece, Color) {
+        let sol = self.pieces.pop_front();
+        self.pieces.push_back((random_piece(), random_color()));
+        sol.unwrap()
+    }
+
     fn completedRow() {}
 
     fn gravityTick() {}
@@ -42,9 +47,12 @@ impl App {
     fn run(&mut self) -> crossterm::Result<()> {
         // Use gravityTick game loop here
         crossterm::terminal::enable_raw_mode()?;
+        self.stdout.queue(cursor::Hide)?;
 
-        let mut piece = random_piece();
-        let color = random_color();
+        let (mut piece, mut color) = self.nextPiece();
+
+        //let mut piece = random_piece();
+        //let color = random_color();
         let mut now = std::time::Instant::now();
         let mut r: i16 = 0;
         let mut c: i16 = 4;
@@ -105,6 +113,11 @@ impl App {
                     self.board.save(piece, r, c, 0);
                     r = 0;
                     c = 4;
+                    let (new_piece, new_color) = self.nextPiece();
+                    self.clear_next_piece();
+                    self.paintNextPiece();
+                    piece = new_piece;
+                    color = new_color;
                 } else {
                     r += 1;
                     self.queue_clear_piece();
@@ -197,6 +210,26 @@ impl App {
                 PaintType::Permanent,
             );
         }
+        Ok(())
+    }
+
+    fn clear_next_piece(&mut self) -> crossterm::Result<()> {
+        const GAME_WIDTH: usize = 12;
+        const INFO_PADDING: usize = 1;
+        const EMPTY_PIECE_COLUMN: usize = 1;
+        const INFO_WIDTH: usize = 4;
+        const EMPTY_TOP_INFO_ROWS: usize = 2;
+        const INFO_HEIGHT: usize = 15; // TODO: Determine if this is the right number
+        let r_start = EMPTY_TOP_INFO_ROWS;
+        let r_end = r_start + INFO_HEIGHT;
+        let c_start = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
+        let c_end = c_start + INFO_WIDTH;
+        for r in r_start..r_end {
+            for c in c_start..c_end {
+                self.paint(r as u16, c as u16, Color::Black)?;
+            }
+        }
+        self.stdout.flush();
         Ok(())
     }
 

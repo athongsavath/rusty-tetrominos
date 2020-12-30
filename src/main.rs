@@ -279,22 +279,30 @@ impl App {
         let (width, height) =
             crossterm::terminal::size().expect("Could not get terminal dimensions.");
 
+        // Keep a 2:1 ratio between the game section and the info section
         let mut width_multiplier = 1;
         while width_multiplier * 2 + width_multiplier <= width / TOTAL_WIDTH {
             width_multiplier += 1;
         }
+        //let width_multiplier = std::cmp::max(width / TOTAL_WIDTH / 3, 1);
         let height_multiplier = height / TOTAL_HEIGHT;
 
         let game_multiplier = std::cmp::min(width_multiplier, height_multiplier);
         let info_multiplier = std::cmp::max(game_multiplier / 2, 1);
 
+        // Since terminal characters are a 2:1 height:width ratio,
+        //  2 characters will be used to create a square pixel
         const COLUMN_MULTIPLIER: u16 = 2;
 
         if column < GAME_WIDTH as u16 {
-            for y in (row * game_multiplier)..((row + 1) * game_multiplier) {
-                for x in (column * game_multiplier * COLUMN_MULTIPLIER)
-                    ..((column + 1) * game_multiplier * COLUMN_MULTIPLIER)
-                {
+            // Game Section
+            let x_start = column * game_multiplier * COLUMN_MULTIPLIER;
+            let x_end = x_start + game_multiplier * COLUMN_MULTIPLIER;
+            let y_start = row * game_multiplier;
+            let y_end = y_start + game_multiplier;
+
+            for x in x_start..x_end {
+                for y in y_start..y_end {
                     self.stdout
                         .queue(cursor::MoveTo(x, y))?
                         .queue(style::PrintStyledContent(
@@ -303,10 +311,13 @@ impl App {
                 }
             }
         } else {
-            for y in (row * info_multiplier)..((row + 1) * info_multiplier) {
-                for x in (column * info_multiplier * COLUMN_MULTIPLIER)
-                    ..((column + 1) * info_multiplier * COLUMN_MULTIPLIER)
-                {
+            // Info Section
+            let x_start = column * info_multiplier * COLUMN_MULTIPLIER;
+            let x_end = x_start + info_multiplier * COLUMN_MULTIPLIER;
+            let y_start = row * info_multiplier;
+            let y_end = y_start + info_multiplier;
+            for x in x_start..x_end {
+                for y in y_start..y_end {
                     self.stdout
                         .queue(cursor::MoveTo(x + GAME_WIDTH * game_multiplier, y))?
                         .queue(style::PrintStyledContent(

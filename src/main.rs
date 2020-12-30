@@ -77,7 +77,8 @@ struct App {
 impl App {
     fn updateFrame() {}
     fn calculateCollision() {}
-    fn nextPiece(&mut self) -> (Piece, Color) {
+
+    fn next_piece(&mut self) -> (Piece, Color) {
         let sol = self.pieces.pop_front();
         self.pieces.push_back((random_piece(), random_color()));
         sol.unwrap()
@@ -90,7 +91,7 @@ impl App {
     fn run(&mut self) -> crossterm::Result<()> {
         // Use gravityTick game loop here
 
-        let (mut piece, mut color) = self.nextPiece();
+        let (mut piece, mut color) = self.next_piece();
 
         let mut now = std::time::Instant::now();
         let mut r: i16 = 0;
@@ -161,7 +162,7 @@ impl App {
                     self.board.save(piece, r, c, 0);
                     r = 0;
                     c = 4;
-                    let (new_piece, new_color) = self.nextPiece();
+                    let (new_piece, new_color) = self.next_piece();
                     self.clear_next_piece()?;
                     self.paint_next_piece()?;
                     piece = new_piece;

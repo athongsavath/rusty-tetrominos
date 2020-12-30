@@ -2,6 +2,7 @@ use crate::piece::{get_piece, Piece};
 
 const WIDTH: usize = 10;
 const HEIGHT: usize = 20;
+const BORDER_WIDTH: usize = 1;
 
 pub struct Board {
     width: usize,
@@ -23,16 +24,16 @@ impl Board {
         for r in 0..matched_piece.len() {
             for c in 0..matched_piece[0].len() {
                 if matched_piece[r][c] == 1 {
-                    // TODO: Fix these hardcoded offsets to account for row and column offset from
-                    // gray outline
-                    if (row + r as i16 - 1) < 0 || (row + r as i16 - 1) >= (self.height as i16) {
-                        return true;
-                    } else if (column + c as i16 - 1) < 0
-                        || (column + c as i16 - 1) >= (self.width as i16)
+                    if (row + r as i16 - BORDER_WIDTH as i16) < 0
+                        || (row + r as i16 - BORDER_WIDTH as i16) >= (self.height as i16)
                     {
                         return true;
-                    } else if self.board[row as usize + r as usize - 1]
-                        [column as usize + c as usize - 1]
+                    } else if (column + c as i16 - BORDER_WIDTH as i16) < 0
+                        || (column + c as i16 - BORDER_WIDTH as i16) >= (self.width as i16)
+                    {
+                        return true;
+                    } else if self.board[row as usize + r as usize - BORDER_WIDTH]
+                        [column as usize + c as usize - BORDER_WIDTH]
                         == 1
                     {
                         return true;
@@ -52,10 +53,9 @@ impl Board {
         let matched_piece = get_piece(piece);
         for r in 0..matched_piece.len() {
             for c in 0..matched_piece[0].len() {
-                // TODO: Fix these hardcoded offsets to account for row and column offset from
-                // gray outline
                 if matched_piece[r][c] == 1 {
-                    self.board[row as usize + r as usize - 1][column as usize + c as usize - 1] = 1;
+                    self.board[row as usize + r as usize - BORDER_WIDTH]
+                        [column as usize + c as usize - BORDER_WIDTH] = 1;
                 }
             }
         }

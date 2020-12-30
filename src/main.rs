@@ -6,6 +6,7 @@ use crossterm::terminal::{ScrollUp, SetSize};
 use crossterm::{cursor, execute, QueueableCommand};
 use piece::{get_piece, random_piece, rotate, Piece};
 use std::collections::VecDeque;
+use std::convert::TryInto;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
@@ -48,24 +49,42 @@ impl App {
 
         let mut piece = random_piece();
         let mut now = std::time::Instant::now();
-        let mut r = 0;
-        let mut c = 4;
+        let mut r: i16 = 0;
+        let mut c: i16 = 4;
 
-        self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+        self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
         loop {
             if poll(Duration::from_millis(100))? {
                 match read()? {
                     Event::Key(event) => {
                         match match_key(event.code) {
                             // Have to verify nothing intersects the walls
-                            Command::Left => c -= 1,
-                            Command::Right => c += 1,
-                            Command::Down => r += 1,
-                            Command::Up => piece = rotate(piece),
+                            Command::Left => {
+                                if !self.board.detect_collision(piece, r, c - 1) {
+                                    c -= 1;
+                                }
+                            }
+                            Command::Right => {
+                                if !self.board.detect_collision(piece, r, c + 1) {
+                                    c += 1;
+                                }
+                            }
+                            Command::Down => {
+                                if !self.board.detect_collision(piece, r + 1, c) {
+                                    r += 1;
+                                }
+                            }
+                            Command::Up => loop {
+                                piece = rotate(piece);
+                                if !self.board.detect_collision(piece, r, c) {
+                                    break;
+                                }
+                            },
+
                             _ => {}
                         }
                         self.queue_clear_piece();
-                        self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+                        self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
@@ -80,6 +99,7 @@ impl App {
             if now.elapsed().as_millis() > 500 {
                 now = std::time::Instant::now();
                 if self.board.detect_collision(piece, r + 1, c) {
+                    println!("collisioin  detected!");
                     // TODO: If intersection, this hsould be permanent
                     self.temp.clear();
                     // TODO: Pop the next piece!
@@ -87,12 +107,12 @@ impl App {
                     //      Increment lines by completed lines
                     r = 0;
                     c = 4;
-                    self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
                 } else {
                     r += 1;
                     self.queue_clear_piece();
                     self.temp.clear();
-                    self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
                 }
             }
             // TODO: Check game tick here
@@ -134,7 +154,11 @@ impl App {
 
     fn queue_clear_piece(&mut self) -> crossterm::Result<()> {
         for Point(row, column) in self.temp.clone().iter() {
-            self.paint(row.clone(), column.clone(), Color::Black)?;
+            self.paint(
+                row.clone().try_into().unwrap(),
+                column.clone().try_into().unwrap(),
+                Color::Black,
+            )?;
         }
         Ok(())
     }

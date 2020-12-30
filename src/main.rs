@@ -63,6 +63,8 @@ const PIECE_HEIGHT: u16 = 4;
  * 1 padding = INFO_PADDING
  * REST: TODO: RANDOM INFO STUFF?
  */
+const STARTING_ROW: i16 = 0;
+const STARTING_COLUMN: i16 = 4;
 
 struct App {
     board: Board,
@@ -72,6 +74,12 @@ struct App {
     lines: i32,
     level: i32,
     stdout: Stdout,
+
+    now: std::time::Instant,
+    piece: Piece,
+    r: i16,
+    c: i16,
+    color: Color,
 }
 
 impl App {
@@ -86,95 +94,136 @@ impl App {
 
     fn completedRow() {}
 
-    fn gravityTick() {}
-
-    fn run(&mut self) -> crossterm::Result<()> {
-        const STARTING_ROW: i16 = 0;
-        const STARTING_COLUMN: i16 = 4;
-
-        let (mut piece, mut color) = self.next_piece();
-        let mut now = std::time::Instant::now();
-        let mut r: i16 = STARTING_ROW;
-        let mut c: i16 = STARTING_COLUMN;
-
-        self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
-        loop {
-            if poll(Duration::from_millis(25))? {
-                match read()? {
-                    Event::Key(event) => {
-                        match match_key(event.code) {
-                            Command::Left => {
-                                if !self.board.detect_collision(piece, r, c - 1) {
-                                    c -= 1;
-                                }
+    fn update_player_move(&mut self) -> crossterm::Result<()> {
+        if poll(Duration::from_millis(25))? {
+            match read()? {
+                Event::Key(event) => {
+                    match match_key(event.code) {
+                        Command::Left => {
+                            if !self.board.detect_collision(self.piece, self.r, self.c - 1) {
+                                self.c -= 1;
                             }
-                            Command::Right => {
-                                if !self.board.detect_collision(piece, r, c + 1) {
-                                    c += 1;
-                                }
+                        }
+                        Command::Right => {
+                            if !self.board.detect_collision(self.piece, self.r, self.c + 1) {
+                                self.c += 1;
                             }
-                            Command::Down => {
-                                if !self.board.detect_collision(piece, r + 1, c) {
-                                    r += 1;
-                                }
+                        }
+                        Command::Down => {
+                            if !self.board.detect_collision(self.piece, self.r + 1, self.c) {
+                                self.r += 1;
                             }
-                            Command::Up => loop {
-                                piece = rotate(piece);
-                                if !self.board.detect_collision(piece, r, c) {
+                        }
+                        Command::Up => loop {
+                            self.piece = rotate(self.piece);
+                            if !self.board.detect_collision(self.piece, self.r, self.c) {
+                                break;
+                            }
+                        },
+                        Command::Space => {
+                            loop {
+                                if self.board.detect_collision(self.piece, self.r + 1, self.c) {
                                     break;
                                 }
-                            },
-                            Command::Space => {
-                                loop {
-                                    if self.board.detect_collision(piece, r + 1, c) {
-                                        break;
-                                    }
-                                    r += 1;
-                                }
-                                // Ensure that enough time elapsed to make this piece permanent
-                                now -= std::time::Duration::new(5, 0);
+                                self.r += 1;
                             }
-                            _ => {}
+                            // Ensure that enough time elapsed to make this piece permanent
+                            self.now -= std::time::Duration::new(5, 0);
                         }
-                        self.queue_clear_piece()?;
-                        self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
+                        _ => {}
                     }
-                    Event::Resize(width, height) => {
-                        // Clear everything and write everything else back
-                        println!("New size {}x{}", width, height);
-
-                        self.clear_screen()?;
-                        // TODO: Repaint everything back to the screen
-                    }
-                    _ => {}
+                    self.queue_clear_piece()?;
+                    self.paint_piece(
+                        self.piece,
+                        self.r as u16,
+                        self.c as u16,
+                        self.color,
+                        PaintType::Temporary,
+                    )?;
                 }
+                Event::Resize(width, height) => {
+                    // Clear everything and write everything else back
+                    println!("New size {}x{}", width, height);
+
+                    self.clear_screen()?;
+                    // TODO: Repaint everything back to the screen
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
+    }
+
+    fn gravity_tick(&mut self) -> crossterm::Result<()> {
+        // Gravity Tick
+        self.now = std::time::Instant::now();
+        if self.board.detect_collision(self.piece, self.r + 1, self.c) {
+            self.temp.clear();
+
+            let new_lines = self.board.handle_completed_lines(self.r);
+            if new_lines > 0 {
+                //self.paint_board(r);
+                self.lines += new_lines;
             }
 
-            if now.elapsed().as_millis() > 500 {
-                // Gravity Tick
-                now = std::time::Instant::now();
-                if self.board.detect_collision(piece, r + 1, c) {
-                    self.temp.clear();
-                    // TODO: Check for completed lines
-                    //      Increment lines by completed lines
-                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
-                    self.board.save(piece, r, c, 0);
+            self.paint_piece(
+                self.piece,
+                self.r as u16,
+                self.c as u16,
+                self.color,
+                PaintType::Permanent,
+            )?;
+            self.board.save(self.piece, self.r, self.c, 0);
 
-                    r = STARTING_ROW;
-                    c = STARTING_COLUMN;
-                    let (new_piece, new_color) = self.next_piece();
-                    self.clear_next_piece()?;
-                    self.paint_next_piece()?;
-                    piece = new_piece;
-                    color = new_color;
-                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
-                    self.stdout.flush()?;
-                } else {
-                    r += 1;
-                    self.queue_clear_piece()?;
-                    self.temp.clear();
-                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
-                }
+            self.r = STARTING_ROW;
+            self.c = STARTING_COLUMN;
+            let (new_piece, new_color) = self.next_piece();
+            self.clear_next_piece()?;
+            self.paint_next_piece()?;
+            self.piece = new_piece;
+            self.color = new_color;
+            self.paint_piece(
+                self.piece,
+                self.r as u16,
+                self.c as u16,
+                self.color,
+                PaintType::Temporary,
+            )?;
+            self.stdout.flush()?;
+        } else {
+            self.r += 1;
+            self.queue_clear_piece()?;
+            self.temp.clear();
+            self.paint_piece(
+                self.piece,
+                self.r as u16,
+                self.c as u16,
+                self.color,
+                PaintType::Temporary,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn run(&mut self) -> crossterm::Result<()> {
+        let (piece, color) = self.next_piece();
+        self.now = std::time::Instant::now();
+        self.piece = piece;
+        self.color = color;
+
+        self.paint_piece(
+            self.piece,
+            self.r as u16,
+            self.c as u16,
+            self.color,
+            PaintType::Temporary,
+        )?;
+        loop {
+            self.update_player_move()?;
+
+            if self.now.elapsed().as_millis() > 500 {
+                self.gravity_tick()?;
             }
         }
     }
@@ -193,6 +242,12 @@ impl App {
             stdout: stdout(),
             pieces,
             temp: vec![],
+
+            piece: random_piece(),
+            now: std::time::Instant::now(),
+            r: STARTING_ROW,
+            c: STARTING_COLUMN,
+            color: Color::Black,
         }
     }
 

@@ -89,10 +89,13 @@ impl App {
     fn gravityTick() {}
 
     fn run(&mut self) -> crossterm::Result<()> {
+        const STARTING_ROW: i16 = 0;
+        const STARTING_COLUMN: i16 = 4;
+
         let (mut piece, mut color) = self.next_piece();
         let mut now = std::time::Instant::now();
-        let mut r: i16 = 0;
-        let mut c: i16 = 4;
+        let mut r: i16 = STARTING_ROW;
+        let mut c: i16 = STARTING_COLUMN;
 
         self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
         loop {
@@ -100,7 +103,6 @@ impl App {
                 match read()? {
                     Event::Key(event) => {
                         match match_key(event.code) {
-                            // Have to verify nothing intersects the walls
                             Command::Left => {
                                 if !self.board.detect_collision(piece, r, c - 1) {
                                     c -= 1;
@@ -147,6 +149,7 @@ impl App {
                     _ => {}
                 }
             }
+
             if now.elapsed().as_millis() > 500 {
                 // Gravity Tick
                 now = std::time::Instant::now();
@@ -156,8 +159,9 @@ impl App {
                     //      Increment lines by completed lines
                     self.paint_piece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
                     self.board.save(piece, r, c, 0);
-                    r = 0;
-                    c = 4;
+
+                    r = STARTING_ROW;
+                    c = STARTING_COLUMN;
                     let (new_piece, new_color) = self.next_piece();
                     self.clear_next_piece()?;
                     self.paint_next_piece()?;

@@ -227,10 +227,11 @@ impl App {
         for r in 0..next_piece.len() {
             for c in 0..next_piece[0].len() {
                 if next_piece[r][c] == 1 && (row + r as u16) != 0 {
-                    self.paint(row + r as u16, column + c as u16, color)?;
+                    self.paint(row + r as u16, column.wrapping_add(c as u16), color)?;
                     match paint_type {
                         PaintType::Temporary => {
-                            self.temp.push(Point(row + r as u16, column + c as u16));
+                            self.temp
+                                .push(Point(row + r as u16, column.wrapping_add(c as u16)));
                         }
                         _ => {}
                     };

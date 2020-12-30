@@ -258,7 +258,7 @@ impl App {
     fn clear_next_piece(&mut self) -> crossterm::Result<()> {
         let r_start = EMPTY_TOP_INFO_ROWS;
         let r_end = r_start + INFO_HEIGHT;
-        let c_start = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
+        let c_start = GAME_WIDTH + INFO_PADDING;
         let c_end = c_start + INFO_WIDTH;
 
         for r in r_start..r_end {

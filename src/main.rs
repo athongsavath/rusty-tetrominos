@@ -1,7 +1,9 @@
-use crossterm::event::{poll, read, Event};
-use crossterm::style::{self, Colorize};
+use crossterm::event::{poll, read, Event, KeyCode};
+use crossterm::style::{self, Color, Colorize};
 use crossterm::terminal::{ScrollUp, SetSize};
 use crossterm::{cursor, execute, QueueableCommand};
+use rand::Rng;
+use std::collections::VecDeque;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
@@ -16,6 +18,11 @@ enum Piece {
     Z,
 }
 
+enum PaintType {
+    Permanent,
+    Temporary,
+}
+
 //struct Piece {}
 
 //impl Piece {
@@ -28,11 +35,12 @@ enum Piece {
 //}
 
 enum Command {
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN,
-    SPACE,
+    Empty,
+    Left,
+    Right,
+    Up,
+    Down,
+    Space,
 }
 
 static O: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
@@ -45,28 +53,31 @@ static T0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 1, 0], [
 static Z0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
 
 static IR: &'static [[u8; 4]; 4] = &[[0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0]];
-static JR: &'static [[u8; 3]; 3] = &[[0, 1, 1], [0, 1, 0], [0, 1, 0]];
-static LR: &'static [[u8; 3]; 3] = &[[0, 1, 0], [0, 1, 0], [0, 1, 1]];
-static SR: &'static [[u8; 3]; 3] = &[[0, 1, 0], [0, 1, 1], [0, 0, 1]];
-static TR: &'static [[u8; 3]; 3] = &[[0, 1, 0], [0, 1, 1], [0, 1, 0]];
-static ZR: &'static [[u8; 3]; 3] = &[[0, 0, 1], [0, 1, 1], [0, 1, 0]];
+static JR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
+static LR: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
+static SR: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]];
+static TR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0]];
+static ZR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0]];
 
 static I2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0]];
-static J2: &'static [[u8; 3]; 3] = &[[0, 0, 0], [1, 1, 1], [0, 0, 1]];
-static L2: &'static [[u8; 3]; 3] = &[[0, 0, 0], [1, 1, 1], [1, 0, 0]];
-static S2: &'static [[u8; 3]; 3] = &[[0, 0, 0], [0, 1, 1], [1, 1, 0]];
-static T2: &'static [[u8; 3]; 3] = &[[0, 0, 0], [1, 1, 1], [0, 1, 0]];
-static Z2: &'static [[u8; 3]; 3] = &[[0, 0, 0], [1, 1, 0], [0, 1, 1]];
+static J2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0]];
+static L2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0]];
+static S2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0]];
+static T2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0]];
+static Z2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0]];
 
 static IL: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
-static JL: &'static [[u8; 3]; 3] = &[[0, 1, 0], [0, 1, 0], [1, 1, 0]];
-static LL: &'static [[u8; 3]; 3] = &[[1, 1, 0], [0, 1, 0], [0, 1, 0]];
-static SL: &'static [[u8; 3]; 3] = &[[1, 0, 0], [1, 1, 0], [0, 1, 0]];
-static TL: &'static [[u8; 3]; 3] = &[[0, 1, 0], [1, 1, 0], [0, 1, 0]];
-static ZL: &'static [[u8; 3]; 3] = &[[0, 1, 0], [1, 1, 0], [1, 0, 0]];
+static JL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0]];
+static LL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
+static SL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
+static TL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
+static ZL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]];
 
 const WIDTH: usize = 10;
 const HEIGHT: usize = 20;
+
+#[derive(Clone)]
+struct Point(u16, u16);
 
 struct IPiece<'a> {
     color: u8,
@@ -163,13 +174,56 @@ impl Board {
 
 struct App {
     board: Board,
-    pieces: [Piece; 3],
+    pieces: VecDeque<Piece>,
+    temp: Vec<Point>,
+    //pieces: vec![randomPiece(), randomPiece(), randomPiece()]
+    //pieces: [Piece; 3],
     width: usize,
     height: usize,
     score: i32,
     lines: i32,
     level: i32,
     stdout: Stdout,
+}
+
+fn random_piece() -> Piece {
+    let mut rng = rand::thread_rng();
+    match rng.gen_range(0..7) {
+        0 => Piece::I,
+        1 => Piece::J,
+        2 => Piece::L,
+        3 => Piece::O,
+        4 => Piece::S,
+        5 => Piece::T,
+        6 => Piece::Z,
+        _ => panic!("This should not be possible"),
+    }
+}
+
+fn match_key(code: KeyCode) -> Command {
+    match code {
+        KeyCode::Left => Command::Left,
+        KeyCode::Right => Command::Right,
+        KeyCode::Down => Command::Down,
+        KeyCode::Up => Command::Up,
+        KeyCode::Char(c) => match c {
+            'a' => Command::Left,
+            's' => Command::Down,
+            'd' => Command::Right,
+            'w' => Command::Up,
+            'A' => Command::Left,
+            'S' => Command::Down,
+            'D' => Command::Right,
+            'W' => Command::Up,
+            'h' => Command::Left,
+            'j' => Command::Down,
+            'l' => Command::Right,
+            'k' => Command::Up,
+            ' ' => Command::Space,
+            _ => Command::Empty,
+        },
+        _ => Command::Empty,
+    }
 }
 
 impl App {
@@ -182,24 +236,36 @@ impl App {
 
     fn run(&mut self) -> crossterm::Result<()> {
         // Use gravityTick game loop here
-        let mut stdout = stdout();
         crossterm::terminal::enable_raw_mode()?;
-        execute!(stdout, SetSize(self.height as u16, self.width as u16))?;
+
+        let mut piece = random_piece();
+        let mut now = std::time::Instant::now();
+        let mut r = 0;
+        let mut c = 5;
+
         loop {
             // First test without gravity
             if poll(Duration::from_millis(100))? {
                 match read()? {
                     Event::Key(event) => {
-                        stdout
-                            .queue(cursor::MoveTo(0, 5))?
-                            .queue(style::PrintStyledContent("█".magenta()))?;
-                        stdout.flush()?;
+                        self.stdout.flush()?;
+                        match match_key(event.code) {
+                            // Have to verify nothing intersects the walls
+                            Command::Left => c -= 1,
+                            Command::Right => c += 1,
+                            Command::Down => r += 1,
+                            Command::Up => piece = piece.rotate(),
+                            _ => {}
+                        }
+                        self.queue_clear_piece();
+                        self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
                         //execute!(stdout, SetSize(20, 10));
                         //println!("{:?}", crossterm::terminal::size());
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
                         println!("New size {}x{}", width, height);
+
                         self.clear();
                         // Write everything back to the screen
                     }
@@ -208,10 +274,24 @@ impl App {
                     _ => {}
                 }
             }
+            if now.elapsed().as_millis() > 500 {
+                now = std::time::Instant::now();
+                r += 1;
+                // TODO: If intersection, this hsould be permanent
+                self.queue_clear_piece();
+                self.temp.clear();
+                self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
+            }
+            // TODO: Check game tick here
         }
     }
 
     fn new(height: usize, width: usize) -> Self {
+        let mut pieces = VecDeque::with_capacity(3);
+        for _ in 0..3 {
+            pieces.push_back(random_piece());
+        }
+
         Self {
             height,
             width,
@@ -220,22 +300,29 @@ impl App {
             score: 0,
             lines: 0,
             stdout: stdout(),
-            pieces: [Piece::I, Piece::J, Piece::T],
+            pieces,
+            temp: vec![],
         }
     }
 
-    fn clear(&self) -> crossterm::Result<()> {
+    fn clear(&mut self) -> crossterm::Result<()> {
         let (height, width) = crossterm::terminal::size().expect("Tetris crashed");
-        let mut stdout = stdout();
         //let multiplier = std::cmp::min(height / 42, width / 20);
         for r in 0..height {
             for c in 0..width {
-                stdout
+                self.stdout
                     .queue(cursor::MoveTo(r, c))?
                     .queue(style::PrintStyledContent("█".black()))?;
             }
         }
 
+        Ok(())
+    }
+
+    fn queue_clear_piece(&mut self) -> crossterm::Result<()> {
+        for Point(row, column) in self.temp.clone().iter() {
+            self.paint(row.clone(), column.clone(), Color::Black)?;
+        }
         Ok(())
     }
 
@@ -245,6 +332,7 @@ impl App {
         row: u16,
         column: u16,
         _color: u16,
+        paint_type: PaintType,
     ) -> crossterm::Result<()> {
         let next_piece = match piece {
             Piece::I => I0,
@@ -259,21 +347,34 @@ impl App {
         for r in 0..next_piece.len() {
             for c in 0..next_piece[0].len() {
                 if next_piece[r][c] == 1 {
-                    self.paint(row + r as u16, column + c as u16, 0)?;
+                    self.paint(row + r as u16, column + c as u16, Color::Magenta)?;
+                    match paint_type {
+                        PaintType::Temporary => {
+                            self.temp.push(Point(row + r as u16, column + c as u16));
+                        }
+                        _ => {}
+                    };
                 }
             }
         }
+        self.stdout.flush();
         Ok(())
     }
 
     fn paintNextPiece(&mut self) -> crossterm::Result<()> {
         for i in 0..self.pieces.len() {
-            self.paintPiece(self.pieces[i].clone(), 2 + (i * 5) as u16, 14, 0);
+            self.paintPiece(
+                self.pieces[i].clone(),
+                2 + (i * 4) as u16,
+                14,
+                0,
+                PaintType::Permanent,
+            );
         }
         Ok(())
     }
 
-    fn paint(&mut self, row: u16, column: u16, _color: u16) -> crossterm::Result<()> {
+    fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
         let (width, height) = crossterm::terminal::size().expect("Tetris crashed");
         //let factor = std::cmp::min(height / 21, width / 36);
         let mut width_multiplier = 1;
@@ -295,7 +396,16 @@ impl App {
                 {
                     self.stdout
                         .queue(cursor::MoveTo(x, y))?
-                        .queue(style::PrintStyledContent("█".grey()))?;
+                        .queue(style::PrintStyledContent(
+                            crossterm::style::style("█").with(color),
+                        ));
+                    //crossterm::queue!(
+                    //stdout,
+                    //style::PrintStyledContent(crossterm::style("█").with(color))
+                    //);
+                    //self.stdout
+                    //.queue(cursor::MoveTo(x, y))?
+                    //.queue(Print(crossterm::style("█").with(color).on(Color::Black)));
                 }
             }
         } else {
@@ -329,15 +439,15 @@ fn main() {
     crossterm::style::SetBackgroundColor(crossterm::style::Color::Black);
     for r in 0..21 {
         for c in 0..1 {
-            app.paint(r, c, 9);
+            app.paint(r, c, Color::Grey);
         }
         for c in 11..12 {
-            app.paint(r, c, 0);
+            app.paint(r, c, Color::Grey);
         }
     }
     for r in 21..=21 {
         for c in 0..12 {
-            app.paint(r, c, 0);
+            app.paint(r, c, Color::Grey);
         }
     }
     app.paintNextPiece();

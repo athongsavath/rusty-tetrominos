@@ -1,6 +1,11 @@
 use crossterm::style::Color;
 use rand::Rng;
 
+pub enum PaintType {
+    Permanent,
+    Temporary,
+}
+
 pub fn random_color() -> Color {
     let mut rng = rand::thread_rng();
     match rng.gen_range(0..=11) {

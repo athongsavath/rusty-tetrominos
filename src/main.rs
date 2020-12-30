@@ -1,4 +1,5 @@
 use board::Board;
+use color::{random_color, PaintType};
 use command::{match_key, Command};
 use crossterm::event::{poll, read, Event};
 use crossterm::style::{self, Color, Colorize};
@@ -15,17 +16,12 @@ mod color;
 mod command;
 mod piece;
 
-enum PaintType {
-    Permanent,
-    Temporary,
-}
-
 #[derive(Clone)]
 struct Point(u16, u16);
 
 struct App {
     board: Board,
-    pieces: VecDeque<Piece>,
+    pieces: VecDeque<(Piece, Color)>,
     temp: Vec<Point>,
     width: usize,
     height: usize,
@@ -48,11 +44,12 @@ impl App {
         crossterm::terminal::enable_raw_mode()?;
 
         let mut piece = random_piece();
+        let color = random_color();
         let mut now = std::time::Instant::now();
         let mut r: i16 = 0;
         let mut c: i16 = 4;
 
-        self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
+        self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
         loop {
             if poll(Duration::from_millis(100))? {
                 match read()? {
@@ -84,7 +81,7 @@ impl App {
                             _ => {}
                         }
                         self.queue_clear_piece();
-                        self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
+                        self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
@@ -99,13 +96,12 @@ impl App {
             if now.elapsed().as_millis() > 500 {
                 now = std::time::Instant::now();
                 if self.board.detect_collision(piece, r + 1, c) {
-                    println!("collisioin  detected!");
                     // TODO: If intersection, this hsould be permanent
                     self.temp.clear();
                     // TODO: Pop the next piece!
                     // TODO: Check for completed lines
                     //      Increment lines by completed lines
-                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Permanent)?;
+                    self.paintPiece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
                     self.board.save(piece, r, c, 0);
                     r = 0;
                     c = 4;
@@ -113,7 +109,7 @@ impl App {
                     r += 1;
                     self.queue_clear_piece();
                     self.temp.clear();
-                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
+                    self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                 }
             }
             // TODO: Check game tick here
@@ -123,7 +119,7 @@ impl App {
     fn new(height: usize, width: usize) -> Self {
         let mut pieces = VecDeque::with_capacity(3);
         for _ in 0..3 {
-            pieces.push_back(random_piece());
+            pieces.push_back((random_piece(), random_color()));
         }
 
         Self {
@@ -169,7 +165,7 @@ impl App {
         piece: Piece,
         row: u16,
         column: u16,
-        _color: u16,
+        color: Color,
         paint_type: PaintType,
     ) -> crossterm::Result<()> {
         let next_piece = get_piece(piece);
@@ -177,7 +173,7 @@ impl App {
         for r in 0..next_piece.len() {
             for c in 0..next_piece[0].len() {
                 if next_piece[r][c] == 1 && (row + r as u16) != 0 {
-                    self.paint(row + r as u16, column + c as u16, Color::Magenta)?;
+                    self.paint(row + r as u16, column + c as u16, color)?;
                     match paint_type {
                         PaintType::Temporary => {
                             self.temp.push(Point(row + r as u16, column + c as u16));
@@ -194,10 +190,10 @@ impl App {
     fn paintNextPiece(&mut self) -> crossterm::Result<()> {
         for i in 0..self.pieces.len() {
             self.paintPiece(
-                self.pieces[i].clone(),
+                self.pieces[i].0.clone(),
                 2 + (i * 4) as u16,
                 14,
-                0,
+                self.pieces[i].1,
                 PaintType::Permanent,
             );
         }
@@ -206,7 +202,6 @@ impl App {
 
     fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
         let (width, height) = crossterm::terminal::size().expect("Tetrominos crashed");
-        //let factor = std::cmp::min(height / 21, width / 36);
         const TOTAL_WIDTH: u16 = 36;
         const TOTAL_HEIGHT: u16 = 22;
 
@@ -241,7 +236,9 @@ impl App {
                 {
                     self.stdout
                         .queue(cursor::MoveTo(x + GAME_WIDTH * game_multiplier, y))?
-                        .queue(style::PrintStyledContent("█".magenta()))?;
+                        .queue(style::PrintStyledContent(
+                            crossterm::style::style("█").with(color),
+                        ));
                 }
             }
         }

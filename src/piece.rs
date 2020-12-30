@@ -136,7 +136,7 @@ pub fn rotate(piece: Piece) -> Piece {
 
 pub fn random_piece() -> Piece {
     let mut rng = rand::thread_rng();
-    match rng.gen_range(0..7) {
+    match rng.gen_range(0..=6) {
         0 => Piece::I,
         1 => Piece::J,
         2 => Piece::L,
@@ -144,6 +144,6 @@ pub fn random_piece() -> Piece {
         4 => Piece::S,
         5 => Piece::T,
         6 => Piece::Z,
-        _ => panic!("This should not be possible"),
+        _ => panic!("RNG went out of range for random piece."),
     }
 }

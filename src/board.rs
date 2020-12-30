@@ -29,11 +29,12 @@ impl Board {
                     {
                         return true;
                     } else if (column + c as i16 - BORDER_WIDTH as i16) < 0
-                        || (column + c as i16 - BORDER_WIDTH as i16) >= (self.width as i16)
+                        || (column.wrapping_add(c as i16) - BORDER_WIDTH as i16)
+                            >= (self.width as i16)
                     {
                         return true;
                     } else if self.board[row as usize + r as usize - BORDER_WIDTH]
-                        [(column + c as i16) as usize - BORDER_WIDTH]
+                        [column.wrapping_add(c as i16) as usize - BORDER_WIDTH]
                         == 1
                     {
                         return true;
@@ -55,7 +56,7 @@ impl Board {
             for c in 0..matched_piece[0].len() {
                 if matched_piece[r][c] == 1 {
                     self.board[row as usize + r as usize - BORDER_WIDTH]
-                        [column as usize + c as usize - BORDER_WIDTH] = 1;
+                        [column.wrapping_add(c as i16) as usize - BORDER_WIDTH] = 1;
                 }
             }
         }

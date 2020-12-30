@@ -89,17 +89,14 @@ impl App {
     fn gravityTick() {}
 
     fn run(&mut self) -> crossterm::Result<()> {
-        // Use gravityTick game loop here
-
         let (mut piece, mut color) = self.next_piece();
-
         let mut now = std::time::Instant::now();
         let mut r: i16 = 0;
         let mut c: i16 = 4;
 
         self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
         loop {
-            if poll(Duration::from_millis(100))? {
+            if poll(Duration::from_millis(25))? {
                 match read()? {
                     Event::Key(event) => {
                         match match_key(event.code) {
@@ -132,30 +129,29 @@ impl App {
                                     }
                                     r += 1;
                                 }
-                                // Ensure that enough time elaphsed to make this piece permanent
+                                // Ensure that enough time elapsed to make this piece permanent
                                 now -= std::time::Duration::new(5, 0);
                             }
                             _ => {}
                         }
-                        self.queue_clear_piece();
+                        self.queue_clear_piece()?;
                         self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
                         println!("New size {}x{}", width, height);
 
-                        self.clear_screen();
+                        self.clear_screen()?;
                         // TODO: Repaint everything back to the screen
                     }
                     _ => {}
                 }
             }
             if now.elapsed().as_millis() > 500 {
+                // Gravity Tick
                 now = std::time::Instant::now();
                 if self.board.detect_collision(piece, r + 1, c) {
-                    // TODO: If intersection, this hsould be permanent
                     self.temp.clear();
-                    // TODO: Pop the next piece!
                     // TODO: Check for completed lines
                     //      Increment lines by completed lines
                     self.paint_piece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
@@ -176,7 +172,6 @@ impl App {
                     self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                 }
             }
-            // TODO: Check game tick here
         }
     }
 

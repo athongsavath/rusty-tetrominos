@@ -19,15 +19,50 @@ mod piece;
 #[derive(Clone)]
 struct Point(u16, u16);
 
+const TOTAL_WIDTH: u16 = 36;
+
 const GAME_WIDTH: u16 = 12;
+
+const GAME_BORDER_WIDTH: u16 = 1;
+// const BOARD_WIDTH: u16 = 10;
+//const GAME_BORDER_WIDTH: u16 = 1;
 const INFO_PADDING: u16 = 1;
-const EMPTY_PIECE_COLUMN: u16 = 1;
 const INFO_WIDTH: u16 = 4;
+
+const TOTAL_HEIGHT: u16 = 22;
+
+const EMPTY_PIECE_COLUMN: u16 = 1;
 const EMPTY_TOP_INFO_ROWS: u16 = 2;
 const INFO_HEIGHT: u16 = 15; // TODO: Determine if this is the right number
-const TOTAL_WIDTH: u16 = 36;
-const TOTAL_HEIGHT: u16 = 22;
-const GAME_BORDER_WIDTH: u16 = 1;
+
+const PIECE_HEIGHT: u16 = 4;
+
+/*
+ * Width consists of
+ * 1 border = GAME_BORDER_WIDTH
+ * 10 game
+ * 1 border = GAME_BORDER_WIDTH
+ * 1 padding = INFO_PADDING
+ * 4 info box = INFO_WIDTH (piece width)
+ * 1 padding = INFO_PADDING
+ */
+
+/*
+ * Game Height = TOTAL_HEIGHT
+ * 1 border = GAME_BORDER_WIDTH
+ * 20 game
+ * 1 border = GAME_BORDER_WIDTH
+ */
+
+/*
+ * Info Height
+ * 2 padding = EMPTY_TOP_INFO_ROWS
+ * 4 piece = PIECE_HEIGHT
+ * 4 piece = PIECE_HEIGHT
+ * 4 piece = PIECE_HEIGHT
+ * 1 padding = INFO_PADDING
+ * REST: TODO: RANDOM INFO STUFF?
+ */
 
 struct App {
     board: Board,
@@ -214,12 +249,17 @@ impl App {
     }
 
     fn paint_next_piece(&mut self) -> crossterm::Result<()> {
+        let column = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
+        let row = EMPTY_TOP_INFO_ROWS;
+
         for i in 0..self.pieces.len() {
+            let (piece, color) = self.pieces[i];
+
             self.paint_piece(
-                self.pieces[i].0.clone(),
-                2 + (i * 4) as u16,
-                14,
-                self.pieces[i].1,
+                piece,
+                row + (i as u16 * PIECE_HEIGHT),
+                column,
+                color,
                 PaintType::Permanent,
             )?;
         }
@@ -231,6 +271,7 @@ impl App {
         let r_end = r_start + INFO_HEIGHT;
         let c_start = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
         let c_end = c_start + INFO_WIDTH;
+
         for r in r_start..r_end {
             for c in c_start..c_end {
                 self.paint(r as u16, c as u16, Color::Black)?;

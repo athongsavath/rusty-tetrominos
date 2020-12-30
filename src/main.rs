@@ -208,11 +208,7 @@ impl App {
 
     fn queue_clear_piece(&mut self) -> crossterm::Result<()> {
         for Point(row, column) in self.temp.clone().iter() {
-            self.paint(
-                row.clone().try_into().unwrap(),
-                column.clone().try_into().unwrap(),
-                Color::Black,
-            )?;
+            self.paint(*row, *column, Color::Black)?;
         }
         Ok(())
     }

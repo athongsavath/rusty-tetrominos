@@ -81,7 +81,16 @@ impl App {
                                     break;
                                 }
                             },
-
+                            Command::Space => {
+                                loop {
+                                    if self.board.detect_collision(piece, r + 1, c) {
+                                        break;
+                                    }
+                                    r += 1;
+                                }
+                                // Ensure that enough time elaphsed to make this piece permanent
+                                now -= std::time::Duration::new(5, 0);
+                            }
                             _ => {}
                         }
                         self.queue_clear_piece();

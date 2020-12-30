@@ -68,8 +68,6 @@ struct App {
     board: Board,
     pieces: VecDeque<(Piece, Color)>,
     temp: Vec<Point>,
-    width: usize,
-    height: usize,
     score: i32,
     lines: i32,
     level: i32,
@@ -181,15 +179,13 @@ impl App {
         }
     }
 
-    fn new(height: usize, width: usize) -> Self {
+    fn new() -> Self {
         let mut pieces = VecDeque::with_capacity(3);
         for _ in 0..3 {
             pieces.push_back((random_piece(), random_color()));
         }
 
         Self {
-            height,
-            width,
             board: Board::new(),
             level: 0,
             score: 0,
@@ -368,7 +364,7 @@ fn main() {
     let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
     // TODO: Make a height and width check and crash if terminal isnt large enough?
 
-    let mut app = App::new(height as usize, width as usize);
+    let mut app = App::new();
     app.init();
     app.run();
 }

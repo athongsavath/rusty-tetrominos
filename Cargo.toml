@@ -1,5 +1,5 @@
 [package]
-name = "tetris"
+name = "rusty-tetrominos"
 version = "0.1.0"
 authors = ["Andrew Thongsavath <andrew@athongsavath.com>"]
 edition = "2018"

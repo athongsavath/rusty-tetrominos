@@ -32,17 +32,6 @@ pub enum Piece {
     Z2,
 }
 
-//struct Piece {}
-
-//impl Piece {
-//fn rotate() {}
-//}
-
-//pub trait Rotate {
-//fn rotate_cw(&self) -> Self;
-//fn rotate_ccw(&self) -> Self;
-//}
-
 pub static O: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
 
 pub static I0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]];
@@ -107,83 +96,6 @@ pub fn rotate(piece: Piece) -> Piece {
         Piece::ZR => Piece::Z2,
         Piece::Z2 => Piece::ZL,
         Piece::ZL => Piece::Z,
-    }
-}
-
-struct IPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl IPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &I0 }
-    }
-}
-
-impl JPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &J0 }
-    }
-}
-
-struct JPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl LPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &L0 }
-    }
-}
-
-struct LPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl OPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &O }
-    }
-}
-
-struct OPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-struct SPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl SPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &S0 }
-    }
-}
-
-struct TPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl TPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &T0 }
-    }
-}
-
-struct ZPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl ZPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &Z0 }
     }
 }
 

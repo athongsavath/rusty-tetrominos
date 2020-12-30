@@ -19,6 +19,16 @@ mod piece;
 #[derive(Clone)]
 struct Point(u16, u16);
 
+const GAME_WIDTH: u16 = 12;
+const INFO_PADDING: u16 = 1;
+const EMPTY_PIECE_COLUMN: u16 = 1;
+const INFO_WIDTH: u16 = 4;
+const EMPTY_TOP_INFO_ROWS: u16 = 2;
+const INFO_HEIGHT: u16 = 15; // TODO: Determine if this is the right number
+const TOTAL_WIDTH: u16 = 36;
+const TOTAL_HEIGHT: u16 = 22;
+const GAME_BORDER_WIDTH: u16 = 1;
+
 struct App {
     board: Board,
     pieces: VecDeque<(Piece, Color)>,
@@ -217,12 +227,6 @@ impl App {
     }
 
     fn clear_next_piece(&mut self) -> crossterm::Result<()> {
-        const GAME_WIDTH: usize = 12;
-        const INFO_PADDING: usize = 1;
-        const EMPTY_PIECE_COLUMN: usize = 1;
-        const INFO_WIDTH: usize = 4;
-        const EMPTY_TOP_INFO_ROWS: usize = 2;
-        const INFO_HEIGHT: usize = 15; // TODO: Determine if this is the right number
         let r_start = EMPTY_TOP_INFO_ROWS;
         let r_end = r_start + INFO_HEIGHT;
         let c_start = GAME_WIDTH + INFO_PADDING + EMPTY_PIECE_COLUMN;
@@ -239,8 +243,6 @@ impl App {
     fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
         let (width, height) =
             crossterm::terminal::size().expect("Could not get terminal dimensions.");
-        const TOTAL_WIDTH: u16 = 36;
-        const TOTAL_HEIGHT: u16 = 22;
 
         let mut width_multiplier = 1;
         while width_multiplier * 2 + width_multiplier <= width / TOTAL_WIDTH {
@@ -252,9 +254,8 @@ impl App {
         let info_multiplier = std::cmp::max(game_multiplier / 2, 1);
 
         const COLUMN_MULTIPLIER: u16 = 2;
-        const GAME_WIDTH: u16 = 12;
 
-        if column < GAME_WIDTH {
+        if column < GAME_WIDTH as u16 {
             for y in (row * game_multiplier)..((row + 1) * game_multiplier) {
                 for x in (column * game_multiplier * COLUMN_MULTIPLIER)
                     ..((column + 1) * game_multiplier * COLUMN_MULTIPLIER)
@@ -284,24 +285,24 @@ impl App {
     }
 
     fn paint_game_border(&mut self) -> crossterm::Result<()> {
-        // TODO: Use constants for all these magic numbers
-        for r in 0..21 {
-            for c in 0..1 {
+        // Paint left and right borders of game box
+        for r in 0..TOTAL_HEIGHT {
+            for c in 0..GAME_BORDER_WIDTH {
                 self.paint(r, c, Color::Grey)?;
             }
-            for c in 11..12 {
-                self.paint(r, c, Color::Grey)?;
-            }
-        }
-        for r in 21..=21 {
-            for c in 0..12 {
+            for c in (GAME_WIDTH - GAME_BORDER_WIDTH)..GAME_WIDTH {
                 self.paint(r, c, Color::Grey)?;
             }
         }
-        for r in 0..=0 {
-            for c in 0..12 {
-                self.paint(r, c, Color::Grey)?;
-            }
+
+        // Paint bottom border of game box
+        for c in 0..GAME_WIDTH {
+            self.paint(TOTAL_HEIGHT - GAME_BORDER_WIDTH, c, Color::Grey)?;
+        }
+
+        // Paint top border of game box
+        for c in 0..12 {
+            self.paint(0, c, Color::Grey)?;
         }
 
         Ok(())
@@ -321,12 +322,12 @@ impl App {
 }
 
 fn main() {
+    // TODO: Have a loading screen?
     println!("Starting Tetrominos!");
     let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
     // TODO: Make a height and width check and crash if terminal isnt large enough?
 
     let mut app = App::new(height as usize, width as usize);
     app.init();
-
     app.run();
 }

@@ -33,7 +33,7 @@ impl Board {
                     {
                         return true;
                     } else if self.board[row as usize + r as usize - BORDER_WIDTH]
-                        [column as usize + c as usize - BORDER_WIDTH]
+                        [(column + c as i16) as usize - BORDER_WIDTH]
                         == 1
                     {
                         return true;

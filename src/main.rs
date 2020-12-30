@@ -2,37 +2,17 @@ use crossterm::event::{poll, read, Event, KeyCode};
 use crossterm::style::{self, Color, Colorize};
 use crossterm::terminal::{ScrollUp, SetSize};
 use crossterm::{cursor, execute, QueueableCommand};
-use rand::Rng;
+use piece::{random_piece, Piece};
 use std::collections::VecDeque;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
-#[derive(Clone, Copy)]
-enum Piece {
-    I,
-    J,
-    L,
-    O,
-    S,
-    T,
-    Z,
-}
+mod piece;
 
 enum PaintType {
     Permanent,
     Temporary,
 }
-
-//struct Piece {}
-
-//impl Piece {
-//fn rotate() {}
-//}
-
-//pub trait Rotate {
-//fn rotate_cw(&self) -> Self;
-//fn rotate_ccw(&self) -> Self;
-//}
 
 enum Command {
     Empty,
@@ -43,118 +23,11 @@ enum Command {
     Space,
 }
 
-static O: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
-
-static I0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]];
-static J0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
-static L0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
-static S0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]];
-static T0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0]];
-static Z0: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
-
-static IR: &'static [[u8; 4]; 4] = &[[0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0]];
-static JR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
-static LR: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]];
-static SR: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]];
-static TR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0]];
-static ZR: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0]];
-
-static I2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0]];
-static J2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0]];
-static L2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0]];
-static S2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0]];
-static T2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0]];
-static Z2: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0]];
-
-static IL: &'static [[u8; 4]; 4] = &[[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
-static JL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0]];
-static LL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]];
-static SL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
-static TL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
-static ZL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]];
-
 const WIDTH: usize = 10;
 const HEIGHT: usize = 20;
 
 #[derive(Clone)]
 struct Point(u16, u16);
-
-struct IPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl IPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &I0 }
-    }
-}
-
-impl JPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &J0 }
-    }
-}
-
-struct JPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl LPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &L0 }
-    }
-}
-
-struct LPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl OPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &O }
-    }
-}
-
-struct OPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-struct SPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl SPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &S0 }
-    }
-}
-
-struct TPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl TPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &T0 }
-    }
-}
-
-struct ZPiece<'a> {
-    color: u8,
-    piece: &'a [[u8; 4]; 4],
-}
-
-impl ZPiece<'_> {
-    fn new(color: u8) -> Self {
-        Self { color, piece: &Z0 }
-    }
-}
 
 struct Board {
     width: usize,
@@ -176,28 +49,12 @@ struct App {
     board: Board,
     pieces: VecDeque<Piece>,
     temp: Vec<Point>,
-    //pieces: vec![randomPiece(), randomPiece(), randomPiece()]
-    //pieces: [Piece; 3],
     width: usize,
     height: usize,
     score: i32,
     lines: i32,
     level: i32,
     stdout: Stdout,
-}
-
-fn random_piece() -> Piece {
-    let mut rng = rand::thread_rng();
-    match rng.gen_range(0..7) {
-        0 => Piece::I,
-        1 => Piece::J,
-        2 => Piece::L,
-        3 => Piece::O,
-        4 => Piece::S,
-        5 => Piece::T,
-        6 => Piece::Z,
-        _ => panic!("This should not be possible"),
-    }
 }
 
 fn match_key(code: KeyCode) -> Command {
@@ -254,7 +111,7 @@ impl App {
                             Command::Left => c -= 1,
                             Command::Right => c += 1,
                             Command::Down => r += 1,
-                            Command::Up => piece = piece.rotate(),
+                            //Command::Up => piece = piece.rotate(),
                             _ => {}
                         }
                         self.queue_clear_piece();
@@ -334,6 +191,7 @@ impl App {
         _color: u16,
         paint_type: PaintType,
     ) -> crossterm::Result<()> {
+        use crate::piece::{I0, J0, L0, O, S0, T0, Z0};
         let next_piece = match piece {
             Piece::I => I0,
             Piece::J => J0,

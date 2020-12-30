@@ -9,6 +9,7 @@ use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
 mod board;
+mod color;
 mod piece;
 
 enum PaintType {
@@ -83,12 +84,11 @@ impl App {
         let mut r = 0;
         let mut c = 4;
 
+        self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
         loop {
-            // First test without gravity
             if poll(Duration::from_millis(100))? {
                 match read()? {
                     Event::Key(event) => {
-                        self.stdout.flush()?;
                         match match_key(event.code) {
                             // Have to verify nothing intersects the walls
                             Command::Left => c -= 1,
@@ -99,18 +99,14 @@ impl App {
                         }
                         self.queue_clear_piece();
                         self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
-                        //execute!(stdout, SetSize(20, 10));
-                        //println!("{:?}", crossterm::terminal::size());
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
                         println!("New size {}x{}", width, height);
 
                         self.clear();
-                        // Write everything back to the screen
+                        // TODO: Repaint everything back to the screen
                     }
-                    //Event::Key(event) => execute!(stdout, ScrollUp(5))?,
-                    //Event::Key(event) => println!("{:?}", event),
                     _ => {}
                 }
             }
@@ -124,6 +120,7 @@ impl App {
                     //      Increment lines by completed lines
                     r = 0;
                     c = 4;
+                    self.paintPiece(piece, r, c, 0, PaintType::Temporary)?;
                 } else {
                     r += 1;
                     self.queue_clear_piece();
@@ -155,7 +152,7 @@ impl App {
     }
 
     fn clear(&mut self) -> crossterm::Result<()> {
-        let (height, width) = crossterm::terminal::size().expect("Tetris crashed");
+        let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
         //let multiplier = std::cmp::min(height / 42, width / 20);
         for r in 0..height {
             for c in 0..width {
@@ -183,18 +180,11 @@ impl App {
         _color: u16,
         paint_type: PaintType,
     ) -> crossterm::Result<()> {
-        use crate::piece::O;
-        use crate::piece::{I0, I2, IL, IR};
-        use crate::piece::{J0, J2, JL, JR};
-        use crate::piece::{L0, L2, LL, LR};
-        use crate::piece::{S0, S2, SL, SR};
-        use crate::piece::{T0, T2, TL, TR};
-        use crate::piece::{Z0, Z2, ZL, ZR};
         let next_piece = get_piece(piece);
 
         for r in 0..next_piece.len() {
             for c in 0..next_piece[0].len() {
-                if next_piece[r][c] == 1 {
+                if next_piece[r][c] == 1 && (row + r as u16) != 0 {
                     self.paint(row + r as u16, column + c as u16, Color::Magenta)?;
                     match paint_type {
                         PaintType::Temporary => {
@@ -223,13 +213,16 @@ impl App {
     }
 
     fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
-        let (width, height) = crossterm::terminal::size().expect("Tetris crashed");
+        let (width, height) = crossterm::terminal::size().expect("Tetrominos crashed");
         //let factor = std::cmp::min(height / 21, width / 36);
+        const TOTAL_WIDTH: u16 = 36;
+        const TOTAL_HEIGHT: u16 = 22;
+
         let mut width_multiplier = 1;
-        while width_multiplier * 2 + width_multiplier <= width / 36 {
+        while width_multiplier * 2 + width_multiplier <= width / TOTAL_WIDTH {
             width_multiplier += 1;
         }
-        let mut height_multiplier = height / 21;
+        let height_multiplier = height / TOTAL_HEIGHT;
 
         let game_multiplier = std::cmp::min(width_multiplier, height_multiplier);
         let info_multiplier = std::cmp::max(game_multiplier / 2, 1);
@@ -247,13 +240,6 @@ impl App {
                         .queue(style::PrintStyledContent(
                             crossterm::style::style("█").with(color),
                         ));
-                    //crossterm::queue!(
-                    //stdout,
-                    //style::PrintStyledContent(crossterm::style("█").with(color))
-                    //);
-                    //self.stdout
-                    //.queue(cursor::MoveTo(x, y))?
-                    //.queue(Print(crossterm::style("█").with(color).on(Color::Black)));
                 }
             }
         } else {
@@ -273,7 +259,7 @@ impl App {
 }
 
 fn main() {
-    println!("Starting Tetris!");
+    println!("Starting Tetrominos!");
     // TODO: Whenever there is a resize, i need to repaint everything
 
     // I should be getting height and width from the current terminal
@@ -281,7 +267,7 @@ fn main() {
     //let width = 640;
 
     // First thing to do is to make the whole screen black
-    let (height, width) = crossterm::terminal::size().expect("Tetris crashed");
+    let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
     let mut app = App::new(height as usize, width as usize);
     app.clear();
     crossterm::style::SetBackgroundColor(crossterm::style::Color::Black);
@@ -294,6 +280,11 @@ fn main() {
         }
     }
     for r in 21..=21 {
+        for c in 0..12 {
+            app.paint(r, c, Color::Grey);
+        }
+    }
+    for r in 0..=0 {
         for c in 0..12 {
             app.paint(r, c, Color::Grey);
         }

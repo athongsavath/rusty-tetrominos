@@ -46,18 +46,14 @@ impl App {
 
     fn run(&mut self) -> crossterm::Result<()> {
         // Use gravityTick game loop here
-        crossterm::terminal::enable_raw_mode()?;
-        self.stdout.queue(cursor::Hide)?;
 
         let (mut piece, mut color) = self.nextPiece();
 
-        //let mut piece = random_piece();
-        //let color = random_color();
         let mut now = std::time::Instant::now();
         let mut r: i16 = 0;
         let mut c: i16 = 4;
 
-        self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
+        self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
         loop {
             if poll(Duration::from_millis(100))? {
                 match read()? {
@@ -89,13 +85,13 @@ impl App {
                             _ => {}
                         }
                         self.queue_clear_piece();
-                        self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
+                        self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                     }
                     Event::Resize(width, height) => {
                         // Clear everything and write everything else back
                         println!("New size {}x{}", width, height);
 
-                        self.clear();
+                        self.clear_screen();
                         // TODO: Repaint everything back to the screen
                     }
                     _ => {}
@@ -109,20 +105,22 @@ impl App {
                     // TODO: Pop the next piece!
                     // TODO: Check for completed lines
                     //      Increment lines by completed lines
-                    self.paintPiece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
+                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Permanent)?;
                     self.board.save(piece, r, c, 0);
                     r = 0;
                     c = 4;
                     let (new_piece, new_color) = self.nextPiece();
-                    self.clear_next_piece();
-                    self.paintNextPiece();
+                    self.clear_next_piece()?;
+                    self.paint_next_piece()?;
                     piece = new_piece;
                     color = new_color;
+                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
+                    self.stdout.flush()?;
                 } else {
                     r += 1;
-                    self.queue_clear_piece();
+                    self.queue_clear_piece()?;
                     self.temp.clear();
-                    self.paintPiece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
+                    self.paint_piece(piece, r as u16, c as u16, color, PaintType::Temporary)?;
                 }
             }
             // TODO: Check game tick here
@@ -148,17 +146,13 @@ impl App {
         }
     }
 
-    fn clear(&mut self) -> crossterm::Result<()> {
-        let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
-        //let multiplier = std::cmp::min(height / 42, width / 20);
+    fn clear_screen(&mut self) -> crossterm::Result<()> {
+        let (height, width) = crossterm::terminal::size().expect("Could not get terminal size.");
         for r in 0..height {
             for c in 0..width {
-                self.stdout
-                    .queue(cursor::MoveTo(r, c))?
-                    .queue(style::PrintStyledContent("█".black()))?;
+                self.paint(r, c, Color::Black)?;
             }
         }
-
         Ok(())
     }
 
@@ -173,7 +167,7 @@ impl App {
         Ok(())
     }
 
-    fn paintPiece(
+    fn paint_piece(
         &mut self,
         piece: Piece,
         row: u16,
@@ -196,19 +190,19 @@ impl App {
                 }
             }
         }
-        self.stdout.flush();
+        self.stdout.flush()?;
         Ok(())
     }
 
-    fn paintNextPiece(&mut self) -> crossterm::Result<()> {
+    fn paint_next_piece(&mut self) -> crossterm::Result<()> {
         for i in 0..self.pieces.len() {
-            self.paintPiece(
+            self.paint_piece(
                 self.pieces[i].0.clone(),
                 2 + (i * 4) as u16,
                 14,
                 self.pieces[i].1,
                 PaintType::Permanent,
-            );
+            )?;
         }
         Ok(())
     }
@@ -229,12 +223,13 @@ impl App {
                 self.paint(r as u16, c as u16, Color::Black)?;
             }
         }
-        self.stdout.flush();
+        self.stdout.flush()?;
         Ok(())
     }
 
     fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
-        let (width, height) = crossterm::terminal::size().expect("Tetrominos crashed");
+        let (width, height) =
+            crossterm::terminal::size().expect("Could not get terminal dimensions.");
         const TOTAL_WIDTH: u16 = 36;
         const TOTAL_HEIGHT: u16 = 22;
 
@@ -259,7 +254,7 @@ impl App {
                         .queue(cursor::MoveTo(x, y))?
                         .queue(style::PrintStyledContent(
                             crossterm::style::style("█").with(color),
-                        ));
+                        ))?;
                 }
             }
         } else {
@@ -271,10 +266,46 @@ impl App {
                         .queue(cursor::MoveTo(x + GAME_WIDTH * game_multiplier, y))?
                         .queue(style::PrintStyledContent(
                             crossterm::style::style("█").with(color),
-                        ));
+                        ))?;
                 }
             }
         }
+
+        Ok(())
+    }
+
+    fn paint_game_border(&mut self) -> crossterm::Result<()> {
+        // TODO: Use constants for all these magic numbers
+        for r in 0..21 {
+            for c in 0..1 {
+                self.paint(r, c, Color::Grey)?;
+            }
+            for c in 11..12 {
+                self.paint(r, c, Color::Grey)?;
+            }
+        }
+        for r in 21..=21 {
+            for c in 0..12 {
+                self.paint(r, c, Color::Grey)?;
+            }
+        }
+        for r in 0..=0 {
+            for c in 0..12 {
+                self.paint(r, c, Color::Grey)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn init(&mut self) -> crossterm::Result<()> {
+        crossterm::style::SetBackgroundColor(crossterm::style::Color::Black);
+        crossterm::terminal::enable_raw_mode()?;
+        self.stdout.queue(cursor::Hide)?;
+        self.clear_screen()?;
+        self.paint_game_border()?;
+        self.paint_next_piece()?;
+        self.stdout.flush()?;
 
         Ok(())
     }
@@ -282,37 +313,11 @@ impl App {
 
 fn main() {
     println!("Starting Tetrominos!");
-    // TODO: Whenever there is a resize, i need to repaint everything
-
-    // I should be getting height and width from the current terminal
-    //let height = 1280;
-    //let width = 640;
-
-    // First thing to do is to make the whole screen black
     let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
+    // TODO: Make a height and width check and crash if terminal isnt large enough?
+
     let mut app = App::new(height as usize, width as usize);
-    app.clear();
-    crossterm::style::SetBackgroundColor(crossterm::style::Color::Black);
-    for r in 0..21 {
-        for c in 0..1 {
-            app.paint(r, c, Color::Grey);
-        }
-        for c in 11..12 {
-            app.paint(r, c, Color::Grey);
-        }
-    }
-    for r in 21..=21 {
-        for c in 0..12 {
-            app.paint(r, c, Color::Grey);
-        }
-    }
-    for r in 0..=0 {
-        for c in 0..12 {
-            app.paint(r, c, Color::Grey);
-        }
-    }
-    app.paintNextPiece();
-    app.stdout.flush();
+    app.init();
 
     app.run();
 }

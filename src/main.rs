@@ -105,9 +105,10 @@ impl App {
                     // TODO: Pop the next piece!
                     // TODO: Check for completed lines
                     //      Increment lines by completed lines
+                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Permanent)?;
+                    self.board.save(piece, r, c, 0);
                     r = 0;
                     c = 4;
-                    self.paintPiece(piece, r as u16, c as u16, 0, PaintType::Temporary)?;
                 } else {
                     r += 1;
                     self.queue_clear_piece();

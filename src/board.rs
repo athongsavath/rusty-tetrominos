@@ -47,4 +47,17 @@ impl Board {
     pub fn detect_endgame(&self, piece: Piece, row: i16, column: i16) -> bool {
         false
     }
+
+    pub fn save(&mut self, piece: Piece, row: i16, column: i16, color: u8) {
+        let matched_piece = get_piece(piece);
+        for r in 0..matched_piece.len() {
+            for c in 0..matched_piece[0].len() {
+                // TODO: Fix these hardcoded offsets to account for row and column offset from
+                // gray outline
+                if matched_piece[r][c] == 1 {
+                    self.board[row as usize + r as usize - 1][column as usize + c as usize - 1] = 1;
+                }
+            }
+        }
+    }
 }

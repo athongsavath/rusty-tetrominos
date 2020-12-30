@@ -2,7 +2,7 @@ use crossterm::event::{poll, read, Event, KeyCode};
 use crossterm::style::{self, Color, Colorize};
 use crossterm::terminal::{ScrollUp, SetSize};
 use crossterm::{cursor, execute, QueueableCommand};
-use piece::{random_piece, Piece};
+use piece::{random_piece, rotate, Piece};
 use std::collections::VecDeque;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
@@ -111,7 +111,7 @@ impl App {
                             Command::Left => c -= 1,
                             Command::Right => c += 1,
                             Command::Down => r += 1,
-                            //Command::Up => piece = piece.rotate(),
+                            Command::Up => piece = rotate(piece),
                             _ => {}
                         }
                         self.queue_clear_piece();
@@ -191,15 +191,45 @@ impl App {
         _color: u16,
         paint_type: PaintType,
     ) -> crossterm::Result<()> {
-        use crate::piece::{I0, J0, L0, O, S0, T0, Z0};
+        use crate::piece::O;
+        use crate::piece::{I0, I2, IL, IR};
+        use crate::piece::{J0, J2, JL, JR};
+        use crate::piece::{L0, L2, LL, LR};
+        use crate::piece::{S0, S2, SL, SR};
+        use crate::piece::{T0, T2, TL, TR};
+        use crate::piece::{Z0, Z2, ZL, ZR};
         let next_piece = match piece {
-            Piece::I => I0,
-            Piece::J => J0,
-            Piece::L => L0,
             Piece::O => O,
+
+            Piece::I => I0,
+            Piece::IR => IR,
+            Piece::I2 => I2,
+            Piece::IL => IL,
+
+            Piece::J => J0,
+            Piece::JR => JR,
+            Piece::J2 => J2,
+            Piece::JL => JL,
+
+            Piece::L => L0,
+            Piece::LR => LR,
+            Piece::L2 => L2,
+            Piece::LL => LL,
+
             Piece::S => S0,
+            Piece::SR => SR,
+            Piece::S2 => S2,
+            Piece::SL => SL,
+
             Piece::T => T0,
+            Piece::TR => TR,
+            Piece::T2 => T2,
+            Piece::TL => TL,
+
             Piece::Z => Z0,
+            Piece::ZR => ZR,
+            Piece::Z2 => Z2,
+            Piece::ZL => ZL,
         };
 
         for r in 0..next_piece.len() {

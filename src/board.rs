@@ -9,10 +9,10 @@ const BORDER_WIDTH: usize = 1;
 /// keeps track of the locations as well as the colors. If I feel like cleaning this up, I can just
 /// use the color_board to keep track of all of the blocks
 pub struct Board {
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
     board: [[u8; WIDTH]; HEIGHT],
-    color_board: [[Color; WIDTH]; HEIGHT],
+    pub color_board: [[Color; WIDTH]; HEIGHT],
 }
 
 impl Board {

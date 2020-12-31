@@ -147,6 +147,13 @@ impl App {
                 }
                 Event::Resize(_, _) => {
                     self.init()?;
+                    self.paint_piece(
+                        self.piece,
+                        self.r as u16,
+                        self.c as u16,
+                        self.color,
+                        PaintType::Temporary,
+                    )?;
                 }
                 _ => {}
             }
@@ -159,7 +166,9 @@ impl App {
     /// longer move downwards. In the latter case, the next piece is setup for the next game loop.
     fn gravity_tick(&mut self) -> crossterm::Result<()> {
         self.now = std::time::Instant::now();
+
         if self.board.detect_collision(self.piece, self.r + 1, self.c) {
+            // Fix piece to board
             self.temp.clear();
 
             let new_lines = self.board.handle_completed_lines(self.r);
@@ -175,6 +184,7 @@ impl App {
                 self.color,
                 PaintType::Permanent,
             )?;
+
             // Check to see if game ended
             if self.board.detect_endgame(self.piece, self.r, self.c) {
                 self.clear_screen()?;
@@ -185,6 +195,7 @@ impl App {
 
             self.board.save(self.piece, self.r, self.c, self.color);
 
+            // Setup for next piece
             self.r = STARTING_ROW;
             self.c = STARTING_COLUMN;
             let (new_piece, new_color) = self.next_piece();
@@ -201,6 +212,7 @@ impl App {
             )?;
             self.stdout.flush()?;
         } else {
+            // Gravity
             self.r += 1;
             self.queue_clear_piece()?;
             self.temp.clear();
@@ -217,6 +229,18 @@ impl App {
 
     /// Repaints the board after a completed row has been deleted
     fn paint_board(&mut self, row: u16) -> crossterm::Result<()> {
+        let mut color;
+        for r in 0..=(row as usize) {
+            for c in 0..self.board.width {
+                color = self.board.color_board[r][c];
+                self.paint(
+                    r as u16 + GAME_BORDER_WIDTH,
+                    c as u16 + GAME_BORDER_WIDTH,
+                    color,
+                )?;
+            }
+        }
+
         Ok(())
     }
 
@@ -447,7 +471,7 @@ impl App {
         self.clear_screen()?;
         self.paint_game_border()?;
         self.paint_next_piece()?;
-        self.paint_board(TOTAL_HEIGHT - 1)?;
+        self.paint_board(self.board.height as u16 - 1)?;
         self.stdout.flush()?;
 
         Ok(())

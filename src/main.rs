@@ -249,6 +249,8 @@ impl App {
     /// gravity ticks
     fn run(&mut self) -> crossterm::Result<()> {
         let (piece, color) = self.next_piece();
+        self.clear_next_piece()?;
+        self.paint_next_piece()?;
         self.now = std::time::Instant::now();
         self.piece = piece;
         self.color = color;

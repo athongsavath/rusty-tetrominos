@@ -144,6 +144,7 @@ impl App {
                 }
                 Event::Resize(_, _) => {
                     self.init()?;
+
                     self.paint_piece(
                         self.piece,
                         self.r as u16,

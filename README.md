@@ -1,6 +1,8 @@
 # Rusty-Tetrominos
 A terminal based tetrominos game built with Rust
 
+![Rusty-Tetrominos Demo](demo/demo.gif)
+
 ## Getting Started
 - To move the tetromino, you can use either the arrow keys, WASD, or HJKL
     * The upward key from the set is used for rotation

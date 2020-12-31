@@ -2,12 +2,10 @@ use board::Board;
 use color::{random_color, PaintType};
 use command::{match_key, Command};
 use crossterm::event::{poll, read, Event};
-use crossterm::style::{self, Color, Colorize};
-use crossterm::terminal::{ScrollUp, SetSize};
-use crossterm::{cursor, execute, QueueableCommand};
+use crossterm::style::{self, Color};
+use crossterm::{cursor, QueueableCommand};
 use piece::{get_piece, random_piece, rotate, Piece};
 use std::collections::VecDeque;
-use std::convert::TryInto;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
@@ -26,7 +24,6 @@ const INFO_WIDTH: u16 = 4;
 
 const TOTAL_HEIGHT: u16 = 22;
 
-const EMPTY_PIECE_COLUMN: u16 = 1;
 const EMPTY_TOP_INFO_ROWS: u16 = 2;
 const INFO_HEIGHT: u16 = 15; // TODO: Determine if this is the right number
 
@@ -187,7 +184,7 @@ impl App {
             }
 
             // Check to see if game ended
-            if self.board.detect_endgame(self.piece, self.r, self.c) {
+            if self.board.detect_endgame(self.piece, self.r) {
                 self.clear_screen()?;
                 println!("GAME OVER! You cleared {} lines", self.lines);
                 std::process::exit(0);
@@ -480,8 +477,10 @@ impl App {
 }
 
 /// Starts the game
-fn main() {
+fn main() -> crossterm::Result<()> {
     let mut app = App::new();
-    app.init();
-    app.run();
+    app.init()?;
+    app.run()?;
+
+    Ok(())
 }

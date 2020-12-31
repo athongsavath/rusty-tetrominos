@@ -145,12 +145,8 @@ impl App {
                         PaintType::Temporary,
                     )?;
                 }
-                Event::Resize(width, height) => {
-                    // Clear everything and write everything else back
-                    println!("New size {}x{}", width, height);
-
-                    self.clear_screen()?;
-                    // TODO: Repaint everything back to the screen
+                Event::Resize(_, _) => {
+                    self.init()?;
                 }
                 _ => {}
             }
@@ -168,7 +164,7 @@ impl App {
 
             let new_lines = self.board.handle_completed_lines(self.r);
             if new_lines > 0 {
-                self.paint_board(self.r)?;
+                self.paint_board(self.r as u16)?;
                 self.lines += new_lines;
             }
 
@@ -220,7 +216,7 @@ impl App {
     }
 
     /// Repaints the board after a completed row has been deleted
-    fn paint_board(&mut self, row: i16) -> crossterm::Result<()> {
+    fn paint_board(&mut self, row: u16) -> crossterm::Result<()> {
         Ok(())
     }
 
@@ -451,6 +447,7 @@ impl App {
         self.clear_screen()?;
         self.paint_game_border()?;
         self.paint_next_piece()?;
+        self.paint_board(TOTAL_HEIGHT - 1)?;
         self.stdout.flush()?;
 
         Ok(())

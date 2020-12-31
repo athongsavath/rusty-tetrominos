@@ -8,6 +8,7 @@ pub enum Command {
     Up,
     Down,
     Space,
+    Escape,
 }
 
 /// Returns the converted keystroke to its associated tetrominos command
@@ -17,6 +18,7 @@ pub fn match_key(code: KeyCode) -> Command {
         KeyCode::Right => Command::Right,
         KeyCode::Down => Command::Down,
         KeyCode::Up => Command::Up,
+        KeyCode::Esc => Command::Escape,
         KeyCode::Char(c) => match c {
             'a' => Command::Left,
             's' => Command::Down,
@@ -31,6 +33,7 @@ pub fn match_key(code: KeyCode) -> Command {
             'l' => Command::Right,
             'k' => Command::Up,
             ' ' => Command::Space,
+            'c' => Command::Escape,
             _ => Command::Empty,
         },
         _ => Command::Empty,

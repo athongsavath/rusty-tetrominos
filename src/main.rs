@@ -129,6 +129,11 @@ impl App {
                             // Ensure that enough time elapsed to make this piece permanent
                             self.now -= std::time::Duration::new(5, 0);
                         }
+                        Command::Escape => {
+                            self.clear_screen()?;
+                            println!("Aborting");
+                            std::process::exit(0);
+                        }
                         _ => {}
                     }
                     self.queue_clear_piece()?;
@@ -174,6 +179,14 @@ impl App {
                 self.color,
                 PaintType::Permanent,
             )?;
+            // Check to see if game ended
+            if self.board.detect_endgame(self.piece, self.r, self.c) {
+                self.clear_screen()?;
+                println!("GAME OVER!");
+                println!("You cleared {} lines", self.lines);
+                std::process::exit(0);
+            }
+
             self.board.save(self.piece, self.r, self.c, self.color);
 
             self.r = STARTING_ROW;

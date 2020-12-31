@@ -188,8 +188,7 @@ impl App {
             // Check to see if game ended
             if self.board.detect_endgame(self.piece, self.r, self.c) {
                 self.clear_screen()?;
-                println!("GAME OVER!");
-                println!("You cleared {} lines", self.lines);
+                println!("GAME OVER! You cleared {} lines", self.lines);
                 std::process::exit(0);
             }
 

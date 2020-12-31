@@ -59,6 +59,16 @@ impl Board {
 
     /// Returns whether or not the game has ended
     pub fn detect_endgame(&self, piece: Piece, row: i16, column: i16) -> bool {
+        let matched_piece = get_piece(piece);
+        for r in 0..matched_piece.len() {
+            for c in 0..matched_piece[0].len() {
+                if matched_piece[r][c] == 1 {
+                    if row + r as i16 <= BORDER_WIDTH as i16 {
+                        return true;
+                    }
+                }
+            }
+        }
         false
     }
 

@@ -1,5 +1,7 @@
 use rand::Rng;
 
+/// Contains all of the possible pieces as well as their rotations
+/// All of them have unique rotations except for the O (Square Block) Piece
 #[derive(Clone, Copy)]
 pub enum Piece {
     I,
@@ -62,6 +64,7 @@ pub static SL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0
 pub static TL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0]];
 pub static ZL: &'static [[u8; 4]; 4] = &[[0, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]];
 
+/// Returns the piece that the enum represents
 pub fn get_piece(piece: Piece) -> &'static [[u8; 4]; 4] {
     match piece {
         Piece::O => O,
@@ -98,6 +101,7 @@ pub fn get_piece(piece: Piece) -> &'static [[u8; 4]; 4] {
     }
 }
 
+/// Returns the rotation of the piece in a clockwise fashion
 pub fn rotate(piece: Piece) -> Piece {
     match piece {
         Piece::O => Piece::O,
@@ -134,6 +138,7 @@ pub fn rotate(piece: Piece) -> Piece {
     }
 }
 
+/// Returns a random piece in the initial spawn orientation
 pub fn random_piece() -> Piece {
     let mut rng = rand::thread_rng();
     match rng.gen_range(0..=6) {

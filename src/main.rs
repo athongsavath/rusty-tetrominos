@@ -16,16 +16,11 @@ mod color;
 mod command;
 mod piece;
 
-#[derive(Clone)]
-struct Point(u16, u16);
-
 const TOTAL_WIDTH: u16 = 36;
 
 const GAME_WIDTH: u16 = 12;
 
 const GAME_BORDER_WIDTH: u16 = 1;
-// const BOARD_WIDTH: u16 = 10;
-//const GAME_BORDER_WIDTH: u16 = 1;
 const INFO_PADDING: u16 = 1;
 const INFO_WIDTH: u16 = 4;
 
@@ -66,6 +61,9 @@ const PIECE_HEIGHT: u16 = 4;
 const STARTING_ROW: i16 = 0;
 const STARTING_COLUMN: i16 = 4;
 
+#[derive(Clone)]
+struct Point(u16, u16);
+
 struct App {
     board: Board,
     pieces: VecDeque<(Piece, Color)>,
@@ -83,17 +81,17 @@ struct App {
 }
 
 impl App {
-    fn updateFrame() {}
-    fn calculateCollision() {}
-
+    /// Returns the next piece out of the deque and replaces it with a new piece
     fn next_piece(&mut self) -> (Piece, Color) {
         let sol = self.pieces.pop_front();
         self.pieces.push_back((random_piece(), random_color()));
         sol.unwrap()
     }
 
-    fn completedRow() {}
-
+    /// Gets the players move and updates the board accordingly
+    ///
+    /// For rotations, the piece moves to the next valid rotation, This means that if no valid
+    /// rotations are found, the piece will just rotate back into it's original orientation.
     fn update_player_move(&mut self) -> crossterm::Result<()> {
         if poll(Duration::from_millis(25))? {
             match read()? {
@@ -121,6 +119,7 @@ impl App {
                             }
                         },
                         Command::Space => {
+                            // Places the piece onto the board
                             loop {
                                 if self.board.detect_collision(self.piece, self.r + 1, self.c) {
                                     break;
@@ -155,15 +154,16 @@ impl App {
         Ok(())
     }
 
+    /// Either moves pieces down due to gravity or affixes piece to the board since, it can no
+    /// longer move downwards. In the latter case, the next piece is setup for the next game loop.
     fn gravity_tick(&mut self) -> crossterm::Result<()> {
-        // Gravity Tick
         self.now = std::time::Instant::now();
         if self.board.detect_collision(self.piece, self.r + 1, self.c) {
             self.temp.clear();
 
             let new_lines = self.board.handle_completed_lines(self.r);
             if new_lines > 0 {
-                //self.paint_board(r);
+                self.paint_board(self.r)?;
                 self.lines += new_lines;
             }
 
@@ -174,7 +174,7 @@ impl App {
                 self.color,
                 PaintType::Permanent,
             )?;
-            self.board.save(self.piece, self.r, self.c, 0);
+            self.board.save(self.piece, self.r, self.c, self.color);
 
             self.r = STARTING_ROW;
             self.c = STARTING_COLUMN;
@@ -206,6 +206,15 @@ impl App {
         Ok(())
     }
 
+    /// Repaints the board after a completed row has been deleted
+    fn paint_board(&mut self, row: i16) -> crossterm::Result<()> {
+        Ok(())
+    }
+
+    /// Runs the program
+    ///
+    /// First the initial piece is setup, then the event loop, which looks for a player move and
+    /// gravity ticks
     fn run(&mut self) -> crossterm::Result<()> {
         let (piece, color) = self.next_piece();
         self.now = std::time::Instant::now();
@@ -228,6 +237,7 @@ impl App {
         }
     }
 
+    /// Initializes an App struct
     fn new() -> Self {
         let mut pieces = VecDeque::with_capacity(3);
         for _ in 0..3 {
@@ -251,6 +261,7 @@ impl App {
         }
     }
 
+    /// Clears the whole terminal screen
     fn clear_screen(&mut self) -> crossterm::Result<()> {
         let (height, width) = crossterm::terminal::size().expect("Could not get terminal size.");
         for r in 0..height {
@@ -261,6 +272,7 @@ impl App {
         Ok(())
     }
 
+    /// Queues a piece to be cleared. These values come from the Temporary painted pieces
     fn queue_clear_piece(&mut self) -> crossterm::Result<()> {
         for Point(row, column) in self.temp.clone().iter() {
             self.paint(*row, *column, Color::Black)?;
@@ -268,6 +280,7 @@ impl App {
         Ok(())
     }
 
+    /// Paints a piece to the board
     fn paint_piece(
         &mut self,
         piece: Piece,
@@ -296,6 +309,7 @@ impl App {
         Ok(())
     }
 
+    /// Paints the next pieces on the info pane
     fn paint_next_piece(&mut self) -> crossterm::Result<()> {
         let column = GAME_WIDTH + INFO_PADDING;
         let row = EMPTY_TOP_INFO_ROWS;
@@ -314,6 +328,7 @@ impl App {
         Ok(())
     }
 
+    /// Clears all of the pieces on the info pane visually, not physically
     fn clear_next_piece(&mut self) -> crossterm::Result<()> {
         let r_start = EMPTY_TOP_INFO_ROWS;
         let r_end = r_start + INFO_HEIGHT;
@@ -329,6 +344,10 @@ impl App {
         Ok(())
     }
 
+    /// Paints pixels to the screen.
+    ///
+    /// Since the screen has a ratio of 2:1, it's necessary to paint 2 characters to get a square
+    /// pixel
     fn paint(&mut self, row: u16, column: u16, color: Color) -> crossterm::Result<()> {
         let (width, height) =
             crossterm::terminal::size().expect("Could not get terminal dimensions.");
@@ -386,6 +405,7 @@ impl App {
         Ok(())
     }
 
+    /// Paints the grey game border
     fn paint_game_border(&mut self) -> crossterm::Result<()> {
         // Paint left and right borders of game box
         for r in 0..TOTAL_HEIGHT {
@@ -410,6 +430,7 @@ impl App {
         Ok(())
     }
 
+    /// Paints all of the things necessary for the board game to the screen
     fn init(&mut self) -> crossterm::Result<()> {
         crossterm::style::SetBackgroundColor(crossterm::style::Color::Black);
         crossterm::terminal::enable_raw_mode()?;
@@ -423,12 +444,8 @@ impl App {
     }
 }
 
+/// Starts the game
 fn main() {
-    // TODO: Have a loading screen?
-    println!("Starting Tetrominos!");
-    let (height, width) = crossterm::terminal::size().expect("Tetrominos crashed");
-    // TODO: Make a height and width check and crash if terminal isnt large enough?
-
     let mut app = App::new();
     app.init();
     app.run();

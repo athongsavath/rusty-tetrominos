@@ -1,5 +1,6 @@
 use crossterm::event::KeyCode;
 
+/// The possible commands that will control the tetrominos game
 pub enum Command {
     Empty,
     Left,
@@ -9,6 +10,7 @@ pub enum Command {
     Space,
 }
 
+/// Returns the converted keystroke to its associated tetrominos command
 pub fn match_key(code: KeyCode) -> Command {
     match code {
         KeyCode::Left => Command::Left,

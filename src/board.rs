@@ -4,6 +4,7 @@ use crossterm::style::Color;
 const WIDTH: usize = 10;
 const HEIGHT: usize = 20;
 const BORDER_WIDTH: usize = 1;
+const PIECE_DIM: usize = 4;
 
 /// The Board contains all of the pieces that are placed into the pile of tetrominos. The Board
 /// keeps track of the locations as well as the colors. If I feel like cleaning this up, I can just
@@ -91,7 +92,33 @@ impl Board {
     ///
     /// Deletes the completed lines and shifts everything down
     pub fn handle_completed_lines(&mut self, row: i16) -> i32 {
-        // CONSIDER: row number is opposite of what we want and it has a border added to it
-        return 0;
+        let row = std::cmp::min(row - BORDER_WIDTH as i16 + PIECE_DIM as i16, HEIGHT as i16);
+        let mut lines = 0;
+
+        let mut write_row = row - 1;
+        for r in (0..row).rev() {
+            if self.board[r as usize].iter().sum::<u8>() != 10 {
+                if write_row != r {
+                    for c in 0..self.board[0].len() {
+                        self.board[write_row as usize][c] = self.board[r as usize][c];
+                        self.color_board[write_row as usize][c] = self.color_board[r as usize][c];
+                    }
+                }
+                if write_row != 0 {
+                    write_row -= 1;
+                }
+            } else {
+                lines += 1;
+            }
+        }
+
+        for r in 0..write_row {
+            for c in 0..self.board[r as usize].len() {
+                self.board[r as usize][c] = 0;
+                self.color_board[r as usize][c] = Color::Black;
+            }
+        }
+
+        return lines;
     }
 }

@@ -131,7 +131,7 @@ impl App {
                         }
                         Command::Escape => {
                             self.clear_screen()?;
-                            println!("Aborting");
+                            println!("Aborting.. Lines clear: {}.", self.lines);
                             std::process::exit(0);
                         }
                         _ => {}
@@ -171,12 +171,6 @@ impl App {
             // Fix piece to board
             self.temp.clear();
 
-            let new_lines = self.board.handle_completed_lines(self.r);
-            if new_lines > 0 {
-                self.paint_board(self.r as u16)?;
-                self.lines += new_lines;
-            }
-
             self.paint_piece(
                 self.piece,
                 self.r as u16,
@@ -184,6 +178,13 @@ impl App {
                 self.color,
                 PaintType::Permanent,
             )?;
+            self.board.save(self.piece, self.r, self.c, self.color);
+
+            let new_lines = self.board.handle_completed_lines(self.r);
+            if new_lines > 0 {
+                self.paint_board(self.r as u16 + PIECE_HEIGHT)?;
+                self.lines += new_lines;
+            }
 
             // Check to see if game ended
             if self.board.detect_endgame(self.piece, self.r, self.c) {
@@ -191,8 +192,6 @@ impl App {
                 println!("GAME OVER! You cleared {} lines", self.lines);
                 std::process::exit(0);
             }
-
-            self.board.save(self.piece, self.r, self.c, self.color);
 
             // Setup for next piece
             self.r = STARTING_ROW;
@@ -228,8 +227,9 @@ impl App {
 
     /// Repaints the board after a completed row has been deleted
     fn paint_board(&mut self, row: u16) -> crossterm::Result<()> {
+        let row = std::cmp::min(self.board.height, row as usize);
         let mut color;
-        for r in 0..=(row as usize) {
+        for r in 0..row {
             for c in 0..self.board.width {
                 color = self.board.color_board[r][c];
                 self.paint(
@@ -470,7 +470,7 @@ impl App {
         self.clear_screen()?;
         self.paint_game_border()?;
         self.paint_next_piece()?;
-        self.paint_board(self.board.height as u16 - 1)?;
+        self.paint_board(self.board.height as u16)?;
         self.stdout.flush()?;
 
         Ok(())
